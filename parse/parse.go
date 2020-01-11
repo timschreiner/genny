@@ -185,13 +185,13 @@ func generateSpecific(filename string, in io.ReadSeeker, typeSet map[string]stri
 		for t, specificType := range typeSet {
 			var specificName string
 
-			if strings.Contains(specificType, ":") {
-				split := strings.Split(specificType, ":")
-				specificType = split[0]
-				specificName = split[1]
-			}
-
 			if strings.Contains(line, t) {
+				if strings.Contains(specificType, ":") {
+					split := strings.Split(specificType, ":")
+					specificType = split[0]
+					specificName = split[1]
+				}
+
 				newLine := subTypeIntoLine(line, t, specificType, specificName)
 				line = newLine
 			}
