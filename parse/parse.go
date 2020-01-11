@@ -10,6 +10,7 @@ import (
 	"go/token"
 	"io"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/iancoleman/strcase"
@@ -222,9 +223,14 @@ func generateSpecific(filename string, in io.ReadSeeker, typeSet map[string]stri
 // generic types for the keys map with the specific types (its value).
 func Generics(filename, outputFilename, pkgName string, in io.ReadSeeker, typeSets []map[string]string) ([]byte, error) {
 
-	totalOutput := header
+	totalOutput := bytes.NewBuffer(header)
+
+	// totalOutput := header
+
+	t0 := time.Now().UnixNano()
 
 	for _, typeSet := range typeSets {
+		start := time.Now().UnixNano()
 
 		// generate the specifics
 		parsed, err := generateSpecific(filename, in, typeSet)
@@ -232,15 +238,22 @@ func Generics(filename, outputFilename, pkgName string, in io.ReadSeeker, typeSe
 			return nil, err
 		}
 
-		totalOutput = append(totalOutput, parsed...)
+		// totalOutput = append(totalOutput, parsed...)
+		totalOutput.Write(parsed)
 
+		stop := time.Now().UnixNano()
+
+		fmt.Printf("%v %v\n", typeSet, time.Duration(stop-start))
 	}
+
+	t1 := time.Now().UnixNano()
 
 	// clean up the code line by line
 	packageFound := false
 	insideImportBlock := false
 	var cleanOutputLines []string
-	scanner := bufio.NewScanner(bytes.NewReader(totalOutput))
+	// scanner := bufio.NewScanner(bytes.NewReader(totalOutput))
+	scanner := bufio.NewScanner(totalOutput)
 	for scanner.Scan() {
 
 		// end of imports block?
@@ -280,7 +293,11 @@ func Generics(filename, outputFilename, pkgName string, in io.ReadSeeker, typeSe
 		cleanOutputLines = append(cleanOutputLines, makeLine(scanner.Text()))
 	}
 
+	t2 := time.Now().UnixNano()
+
 	cleanOutput := strings.Join(cleanOutputLines, "")
+
+	t3 := time.Now().UnixNano()
 
 	output := []byte(cleanOutput)
 	var err error
@@ -290,11 +307,17 @@ func Generics(filename, outputFilename, pkgName string, in io.ReadSeeker, typeSe
 		output = changePackage(bytes.NewReader([]byte(output)), pkgName)
 	}
 
+	t4 := time.Now().UnixNano()
+
 	// fix the imports
 	output, err = imports.Process(outputFilename, output, nil)
 	if err != nil {
 		return nil, &errImports{Err: err}
 	}
+
+	t5 := time.Now().UnixNano()
+
+	fmt.Printf("parsing=%v cleanup=%v string_join=%v change_package=%v goimports=%v\n", time.Duration(t1-t0), time.Duration(t2-t1), time.Duration(t3-t2), time.Duration(t4-t3), time.Duration(t5-t4))
 
 	return output, nil
 }
