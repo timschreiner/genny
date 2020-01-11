@@ -10,8 +10,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/cheekybits/genny/out"
-	"github.com/cheekybits/genny/parse"
+	"github.com/timschreiner/genny/out"
+	"github.com/timschreiner/genny/parse"
 )
 
 /*
