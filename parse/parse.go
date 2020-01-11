@@ -287,44 +287,36 @@ func isAlphaNumeric(r rune) bool {
 // wordify turns a type into a nice word for function and type
 // names etc.
 
-var exportedNameCache = make(map[string]string)
-var unexportedNameCache = make(map[string]string)
+var cacheExportedNames = make(map[string]string)
+var cacheUnexportedNames = make(map[string]string)
 
 func wordify(s string, name string, exported bool) string {
 	if name != "" {
 		return name
 	}
 
-	if exported {
-		v, ok := exportedNameCache[s]
-		if ok {
-			return v
-		}
+	cache := cacheExportedNames
+	if !exported {
+		cache = cacheUnexportedNames
+	}
 
-		v = s
-		v = strings.TrimRight(v, "{}")
-		v = strings.TrimLeft(v, "*&")
-		v = strings.Replace(v, ".", "", -1)
-		v = strings.ToUpper(string(v[0])) + v[1:]
-
-		exportedNameCache[s] = v
-
-		return v
-	} else {
-		v, ok := unexportedNameCache[s]
-		if ok {
-			return v
-		}
-
-		v = s
-		v = strings.TrimRight(v, "{}")
-		v = strings.TrimLeft(v, "*&")
-		v = strings.Replace(v, ".", "", -1)
-
-		unexportedNameCache[s] = v
-
+	v, ok := cache[s]
+	if ok {
 		return v
 	}
+
+	v = s
+	v = strings.TrimRight(v, "{}")
+	v = strings.TrimLeft(v, "*&")
+	v = strings.Replace(v, ".", "", -1)
+
+	if exported {
+		v = strings.ToUpper(string(v[0])) + v[1:]
+	}
+
+	cache[s] = v
+
+	return v
 }
 
 func changePackage(r io.Reader, pkgName string) []byte {
