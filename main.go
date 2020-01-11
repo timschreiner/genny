@@ -32,8 +32,6 @@ const (
 )
 
 func main() {
-	fmt.Println("hello")
-
 	var (
 		in      = flag.String("in", "", "file to parse instead of stdin")
 		out     = flag.String("out", "", "file to save output to instead of stdout")
