@@ -286,18 +286,45 @@ func isAlphaNumeric(r rune) bool {
 
 // wordify turns a type into a nice word for function and type
 // names etc.
+
+var exportedNameCache = make(map[string]string)
+var unexportedNameCache = make(map[string]string)
+
 func wordify(s string, name string, exported bool) string {
 	if name != "" {
 		return name
 	}
 
-	s = strings.TrimRight(s, "{}")
-	s = strings.TrimLeft(s, "*&")
-	s = strings.Replace(s, ".", "", -1)
-	if !exported {
-		return s
+	if exported {
+		v, ok := exportedNameCache[s]
+		if ok {
+			return v
+		}
+
+		v = s
+		v = strings.TrimRight(v, "{}")
+		v = strings.TrimLeft(v, "*&")
+		v = strings.Replace(v, ".", "", -1)
+		v = strings.ToUpper(string(v[0])) + v[1:]
+
+		exportedNameCache[s] = v
+
+		return v
+	} else {
+		v, ok := unexportedNameCache[s]
+		if ok {
+			return v
+		}
+
+		v = s
+		v = strings.TrimRight(v, "{}")
+		v = strings.TrimLeft(v, "*&")
+		v = strings.Replace(v, ".", "", -1)
+
+		unexportedNameCache[s] = v
+
+		return v
 	}
-	return strings.ToUpper(string(s[0])) + s[1:]
 }
 
 func changePackage(r io.Reader, pkgName string) []byte {
