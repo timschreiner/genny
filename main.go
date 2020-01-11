@@ -88,19 +88,12 @@ func main() {
 		br := bytes.NewReader(b)
 		err = gen(*in, outputFilename, *pkgName, br, typeSets, outWriter)
 	} else if len(*in) > 0 {
-		// var file *os.File
-		// file, err = os.Open(*in)
-		// if err != nil {
-		// 	fatal(exitcodeSourceFileInvalid, err)
-		// }
-		// defer file.Close()
-
-		filebytes, err := ioutil.ReadFile(*in)
+		var file *os.File
+		file, err = os.Open(*in)
 		if err != nil {
 			fatal(exitcodeSourceFileInvalid, err)
 		}
-
-		file := bytes.NewReader(filebytes)
+		defer file.Close()
 
 		err = gen(*in, outputFilename, *pkgName, file, typeSets, outWriter)
 	} else {
