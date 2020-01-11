@@ -41,15 +41,21 @@ func subIntoLiteral(lit, typeTemplate, specificType string) string {
 	if lit == typeTemplate {
 		return specificType
 	}
+
 	if !strings.Contains(lit, typeTemplate) {
 		return lit
 	}
+
 	specificLg := wordify(specificType, true)
-	specificSm := wordify(specificType, false)
+
 	result := strings.Replace(lit, typeTemplate, specificLg, -1)
+
 	if strings.HasPrefix(result, specificLg) && !isExported(lit) {
+		specificSm := wordify(specificType, false)
+
 		return strings.Replace(result, specificLg, specificSm, 1)
 	}
+
 	return result
 }
 
