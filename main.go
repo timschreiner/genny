@@ -9,13 +9,10 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/timschreiner/genny/out"
 	"github.com/timschreiner/genny/parse"
 )
-
-var trueStart = time.Now().UnixNano()
 
 /*
 
@@ -148,8 +145,6 @@ func fatal(code int, a ...interface{}) {
 
 // gen performs the generic generation.
 func gen(filename, outputFilename, pkgName string, in io.ReadSeeker, typesets []map[string]string, out io.Writer) error {
-	start := time.Now().UnixNano()
-
 	var output []byte
 	var err error
 
@@ -158,13 +153,7 @@ func gen(filename, outputFilename, pkgName string, in io.ReadSeeker, typesets []
 		return err
 	}
 
-	parsed := time.Now().UnixNano()
-
 	out.Write(output)
-
-	written := time.Now().UnixNano()
-
-	fmt.Printf("startup=%v parsed=%v written=%v\n", time.Duration(start-trueStart), time.Duration(parsed-start), time.Duration(written-parsed))
 
 	return nil
 }
