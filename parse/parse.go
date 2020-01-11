@@ -12,6 +12,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/iancoleman/strcase"
 	"golang.org/x/tools/imports"
 )
 
@@ -46,17 +47,35 @@ func subIntoLiteral(lit, typeTemplate, specificType, specificName string) string
 		return lit
 	}
 
-	specificLg := wordify(specificType, specificName, true)
+	if isStructTag(lit) {
+		return subIntoStructTag(lit, typeTemplate, specificType, specificName)
+	}
 
-	result := strings.Replace(lit, typeTemplate, specificLg, -1)
+	capitalizedName := wordify(specificType, specificName, true)
 
-	if strings.HasPrefix(result, specificLg) && !isExported(lit) {
-		specificSm := wordify(specificType, specificName, false)
+	result := strings.Replace(lit, typeTemplate, capitalizedName, -1)
 
-		return strings.Replace(result, specificLg, specificSm, 1)
+	if strings.HasPrefix(result, capitalizedName) && !isExported(lit) {
+		uncapitalizedName := wordify(specificType, specificName, false)
+
+		return strings.Replace(result, capitalizedName, uncapitalizedName, 1)
 	}
 
 	return result
+}
+
+func subIntoStructTag(lit string, typeTemplate string, specificType string, specificName string) string {
+	capitalizedName := wordify(specificType, specificName, true)
+
+	snakeCaseName := strcase.ToSnake(capitalizedName)
+
+	result := strings.Replace(lit, typeTemplate, snakeCaseName, -1)
+
+	return result
+}
+
+func isStructTag(lit string) bool {
+	return strings.HasPrefix(lit, "`db:") || strings.HasPrefix(lit, "`json:")
 }
 
 func subTypeIntoComment(line, typeTemplate, specificType, specificName string) string {
@@ -266,6 +285,7 @@ func Generics(filename, outputFilename, pkgName string, in io.ReadSeeker, typeSe
 	if pkgName != "" {
 		output = changePackage(bytes.NewReader([]byte(output)), pkgName)
 	}
+
 	// fix the imports
 	output, err = imports.Process(outputFilename, output, nil)
 	if err != nil {

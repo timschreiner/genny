@@ -1,12 +1,12 @@
 package example
 
-import "github.com/cheekybits/genny/generic"
+import "github.com/timschreiner/genny/generic"
 
 type Generic generic.Type
 
 // GenericQueue represents a queue of Generic types.
 type GenericQueue struct {
-	items []Generic
+	items []Generic `db:"Generic"`
 }
 
 // NewGenericQueue makes a new empty Generic queue.
