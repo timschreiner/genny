@@ -29,7 +29,7 @@ func TestWordify(t *testing.T) {
 		"pack.type":   "Packtype",
 		"*pack.type":  "Packtype",
 	} {
-		assert.Equal(t, wordified, wordify(word, true))
+		assert.Equal(t, wordified, wordify(word, "", true))
 	}
 
 }

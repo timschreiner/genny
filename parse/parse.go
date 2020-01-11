@@ -37,7 +37,7 @@ var unwantedLinePrefixes = [][]byte{
 	[]byte("//go:generate genny "),
 }
 
-func subIntoLiteral(lit, typeTemplate, specificType string) string {
+func subIntoLiteral(lit, typeTemplate, specificType, specificName string) string {
 	if lit == typeTemplate {
 		return specificType
 	}
@@ -46,12 +46,12 @@ func subIntoLiteral(lit, typeTemplate, specificType string) string {
 		return lit
 	}
 
-	specificLg := wordify(specificType, true)
+	specificLg := wordify(specificType, specificName, true)
 
 	result := strings.Replace(lit, typeTemplate, specificLg, -1)
 
 	if strings.HasPrefix(result, specificLg) && !isExported(lit) {
-		specificSm := wordify(specificType, false)
+		specificSm := wordify(specificType, specificName, false)
 
 		return strings.Replace(result, specificLg, specificSm, 1)
 	}
@@ -59,12 +59,12 @@ func subIntoLiteral(lit, typeTemplate, specificType string) string {
 	return result
 }
 
-func subTypeIntoComment(line, typeTemplate, specificType string) string {
+func subTypeIntoComment(line, typeTemplate, specificType, specificName string) string {
 	var sb strings.Builder
 
 	var subbed string
 	for _, w := range strings.Fields(line) {
-		sb.WriteString(subIntoLiteral(w, typeTemplate, specificType))
+		sb.WriteString(subIntoLiteral(w, typeTemplate, specificType, specificName))
 		sb.WriteString(" ")
 	}
 	return subbed
@@ -72,7 +72,7 @@ func subTypeIntoComment(line, typeTemplate, specificType string) string {
 
 // Does the heavy lifting of taking a line of our code and
 // substituting a type into there for our generic type
-func subTypeIntoLine(line, typeTemplate, specificType string) string {
+func subTypeIntoLine(line, typeTemplate, specificType, specificName string) string {
 	src := []byte(line)
 	var s scanner.Scanner
 	fset := token.NewFileSet()
@@ -86,10 +86,10 @@ func subTypeIntoLine(line, typeTemplate, specificType string) string {
 		if tok == token.EOF {
 			break
 		} else if tok == token.COMMENT {
-			subbed := subTypeIntoComment(lit, typeTemplate, specificType)
+			subbed := subTypeIntoComment(lit, typeTemplate, specificType, specificName)
 			output.WriteString(subbed)
 		} else if tok.IsLiteral() {
-			subbed := subIntoLiteral(lit, typeTemplate, specificType)
+			subbed := subIntoLiteral(lit, typeTemplate, specificType, specificName)
 			output.WriteString(subbed)
 		} else {
 			output.WriteString(tok.String())
@@ -128,9 +128,9 @@ func generateSpecific(filename string, in io.ReadSeeker, typeSet map[string]stri
 				}
 				switch tt := ts.Type.(type) {
 				case *ast.SelectorExpr:
-					if name, ok := tt.X.(*ast.Ident); ok {
+					if name, identOK := tt.X.(*ast.Ident); identOK {
 						if name.Name == genericPackage {
-							if _, ok := typeSet[ts.Name.Name]; !ok {
+							if _, typesetContains := typeSet[ts.Name.Name]; !typesetContains {
 								return nil, &errMissingSpecificType{GenericType: ts.Name.Name}
 							}
 						}
@@ -160,8 +160,16 @@ func generateSpecific(filename string, in io.ReadSeeker, typeSet map[string]stri
 		}
 
 		for t, specificType := range typeSet {
+			var specificName string
+
+			if strings.Contains(specificType, ":") {
+				split := strings.Split(specificType, ":")
+				specificType = split[0]
+				specificName = split[1]
+			}
+
 			if strings.Contains(line, t) {
-				newLine := subTypeIntoLine(line, t, specificType)
+				newLine := subTypeIntoLine(line, t, specificType, specificName)
 				line = newLine
 			}
 		}
@@ -278,7 +286,11 @@ func isAlphaNumeric(r rune) bool {
 
 // wordify turns a type into a nice word for function and type
 // names etc.
-func wordify(s string, exported bool) string {
+func wordify(s string, name string, exported bool) string {
+	if name != "" {
+		return name
+	}
+
 	s = strings.TrimRight(s, "{}")
 	s = strings.TrimLeft(s, "*&")
 	s = strings.Replace(s, ".", "", -1)
@@ -303,7 +315,7 @@ func changePackage(r io.Reader, pkgName string) []byte {
 			done = true
 		}
 
-		fmt.Fprintln(&out, s)
+		_, _ = fmt.Fprintln(&out, s)
 	}
 	return out.Bytes()
 }
