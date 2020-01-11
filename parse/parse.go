@@ -67,7 +67,11 @@ func subIntoLiteral(lit, typeTemplate, specificType, specificName string) string
 func subIntoStructTag(lit string, typeTemplate string, specificType string, specificName string) string {
 	capitalizedName := wordify(specificType, specificName, true)
 
-	snakeCaseName := strcase.ToSnake(capitalizedName)
+	snakeCaseName, ok := cacheSnakeCaseNames[capitalizedName]
+	if !ok {
+		snakeCaseName = strcase.ToSnake(capitalizedName)
+		cacheSnakeCaseNames[capitalizedName] = snakeCaseName
+	}
 
 	result := strings.Replace(lit, typeTemplate, snakeCaseName, -1)
 
@@ -309,6 +313,7 @@ func isAlphaNumeric(r rune) bool {
 
 var cacheExportedNames = make(map[string]string)
 var cacheUnexportedNames = make(map[string]string)
+var cacheSnakeCaseNames = make(map[string]string)
 
 func wordify(s string, name string, exported bool) string {
 	if name != "" {
