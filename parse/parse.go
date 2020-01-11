@@ -9,7 +9,6 @@ import (
 	"go/scanner"
 	"go/token"
 	"io"
-	"os"
 	"strings"
 	"unicode"
 
@@ -55,44 +54,54 @@ func subIntoLiteral(lit, typeTemplate, specificType string) string {
 }
 
 func subTypeIntoComment(line, typeTemplate, specificType string) string {
+	var sb strings.Builder
+
 	var subbed string
 	for _, w := range strings.Fields(line) {
-		subbed = subbed + subIntoLiteral(w, typeTemplate, specificType) + " "
+		sb.WriteString(subIntoLiteral(w, typeTemplate, specificType))
+		sb.WriteString(" ")
 	}
 	return subbed
 }
 
 // Does the heavy lifting of taking a line of our code and
-// sbustituting a type into there for our generic type
+// substituting a type into there for our generic type
 func subTypeIntoLine(line, typeTemplate, specificType string) string {
 	src := []byte(line)
 	var s scanner.Scanner
 	fset := token.NewFileSet()
 	file := fset.AddFile("", fset.Base(), len(src))
 	s.Init(file, src, nil, scanner.ScanComments)
-	output := ""
+
+	var output strings.Builder
+
 	for {
 		_, tok, lit := s.Scan()
 		if tok == token.EOF {
 			break
 		} else if tok == token.COMMENT {
 			subbed := subTypeIntoComment(lit, typeTemplate, specificType)
-			output = output + subbed + " "
+			output.WriteString(subbed)
 		} else if tok.IsLiteral() {
 			subbed := subIntoLiteral(lit, typeTemplate, specificType)
-			output = output + subbed + " "
+			output.WriteString(subbed)
 		} else {
-			output = output + tok.String() + " "
+			output.WriteString(tok.String())
 		}
+		output.WriteString(" ")
 	}
-	return output
+
+	return output.String()
 }
 
 // typeSet looks like "KeyType: int, ValueType: string"
 func generateSpecific(filename string, in io.ReadSeeker, typeSet map[string]string) ([]byte, error) {
 
 	// ensure we are at the beginning of the file
-	in.Seek(0, os.SEEK_SET)
+	_, err := in.Seek(0, io.SeekStart)
+	if err != nil {
+		return nil, err
+	}
 
 	// parse the source file
 	fs := token.NewFileSet()
@@ -125,7 +134,10 @@ func generateSpecific(filename string, in io.ReadSeeker, typeSet map[string]stri
 		}
 	}
 
-	in.Seek(0, os.SEEK_SET)
+	_, err = in.Seek(0, io.SeekStart)
+	if err != nil {
+		return nil, err
+	}
 
 	var buf bytes.Buffer
 
