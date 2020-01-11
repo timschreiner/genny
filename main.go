@@ -11,9 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cheekybits/genny/out"
-	"github.com/cheekybits/genny/parse"
+	"github.com/timschreiner/genny/out"
+	"github.com/timschreiner/genny/parse"
 )
+
+var trueStart = time.Now().UnixNano()
 
 /*
 
@@ -161,7 +163,7 @@ func gen(filename, outputFilename, pkgName string, in io.ReadSeeker, typesets []
 
 	written := time.Now().UnixNano()
 
-	fmt.Printf("parsed=%v written=%v\n", time.Duration(parsed-start), time.Duration(written-parsed))
+	fmt.Printf("startup=%v parsed=%v written=%v\n", time.Duration(start-trueStart), time.Duration(parsed-start), time.Duration(written-parsed))
 
 	return nil
 }
