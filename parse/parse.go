@@ -85,12 +85,12 @@ func isStructTag(lit string) bool {
 func subTypeIntoComment(line, typeTemplate, specificType, specificName string) string {
 	var sb strings.Builder
 
-	var subbed string
 	for _, w := range strings.Fields(line) {
 		sb.WriteString(subIntoLiteral(w, typeTemplate, specificType, specificName))
 		sb.WriteString(" ")
 	}
-	return subbed
+
+	return sb.String()
 }
 
 // Does the heavy lifting of taking a line of our code and
@@ -207,6 +207,11 @@ func generateSpecific(filename string, in io.ReadSeeker, typeSet map[string]stri
 		for t, specificType := range typeSet {
 			if !strings.Contains(line, t) {
 				continue
+			}
+
+			if strings.HasPrefix(line, "// gennyadd") {
+				// we want to uncomment this line
+				line = strings.Replace(line, "// gennyadd", "", 1)
 			}
 
 			nt := names[specificType]
